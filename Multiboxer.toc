@@ -4,6 +4,7 @@
 ## Author: PizzaDudeZ
 ## Interface: 81000
 ## SavedVariables: MultiboxerDB
+## DefaultState: disabled
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
@@ -18,5 +19,5 @@ Libs\StdUi\StdUi.xml
 
 main.lua
 modules\scan.lua
-
+modules\tab.lua
 

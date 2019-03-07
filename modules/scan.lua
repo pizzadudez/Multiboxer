@@ -1,8 +1,9 @@
 -- addon object
 local Multiboxer = unpack(select(2, ...))
+-- ui lib
 local StdUi = LibStub('StdUi')
 
--- this module
+-- module object
 local Scan = Multiboxer:NewModule('Scan', 'AceEvent-3.0', 'AceTimer-3.0')
 
 function Scan:Enable()
@@ -22,26 +23,6 @@ function Scan:AUCTION_HOUSE_CLOSED()
 	--self:UnregisterEvent('UI_ERROR_MESSAGE')
 end
 
-function Scan:TestTimer()
-	QueryAuctionItems("Riverbud",nil,nil, 1, 0,0,false, true, nil)
-end
-
-local btn = StdUi:Button(UIParent, 60, 30, 'SCAN TEST')
-btn:SetPoint('TOPLEFT', UIParent, 'CENTER', -300, 200)
-btn:SetScript('OnClick', function()
-	--QueryAuctionItems("Riverbud",nil,nil, 0, 0,0,false, true, nil)
-	--Scan:ScheduleTimer('TestTimer', 8)
-	Scan.scanList = {"Riverbud", "Siren's Pollen", "Akunda's Bite"}
-	Scan:ScanList()
-end)
-
-function Scan:ScanList()
-	local itemString = table.remove(self.scanList, 1)
-	if itemString then
-		self:ScanItem(itemString)
-	end
-end
-
 function Scan:AUCTION_ITEM_LIST_UPDATE()
 	-- TODO: find a way to only fire this after a chunk of list updates
 	-- so the data is complete
@@ -52,6 +33,15 @@ function Scan:AUCTION_ITEM_LIST_UPDATE()
 	end
 end
 
+-- Scans a list of items
+function Scan:ScanList()
+	local itemString = table.remove(self.scanList, 1)
+	if itemString then
+		self:ScanItem(itemString)
+	end
+end
+
+-- Scans a single item
 function Scan:ScanItem(itemString)
 	--TODO: if already scanning dont scan
 	self.itemString = itemString
