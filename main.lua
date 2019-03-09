@@ -17,6 +17,7 @@ function Multiboxer:OnInitialize()
 	self:EnableModule('Scan')
 
 	self.db = MultiboxerDB or {}
+	MultiboxerDB = self.db
 
 	Multiboxer.auctionTabs = {} -- table containing the addon's ah tabs
 end

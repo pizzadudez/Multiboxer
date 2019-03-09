@@ -25,22 +25,28 @@ function Scan:AUCTION_HOUSE_CLOSED()
 end
 
 function Scan:AUCTION_ITEM_LIST_UPDATE()
-	-- first update 
-	if self.scanningItem and self.queryProgress then
-		print('update1')
-		Scan:StorePageData(self.currPage)
-		self.queryProgress = false
-		self:ScanNextPage()		
-	-- any further updates before next query
-	elseif not self.queryProgress then
-		print('UPDATE')
-	end
+	-- first update or previous update was incomplete
+	if self.queryProgress then
+		self:StorePageData(self.currPage)
+		-- no missing auction owners -> we can proceed to next page
+		if self.noOwner == false then
+			self.queryProgress = false
 
-	-- TODO: find a way to only fire this after a chunk of list updates
-	-- so the data is complete
+			if self:IsLastPage(self.currPage) then
+				self:ScanList()
+			else
+				self:ScanNextPage()
+			end
+		end
+	end
 end
 
 function Scan:ScanList()
+	if not CanSendAuctionQuery() then
+		Scan:ScheduleTimer('ScanList', 0.1)
+		return
+	end
+
 	local itemString = table.remove(self.scanList, 1)
 	if itemString then
 		self:ScanItem(itemString)
@@ -48,49 +54,64 @@ function Scan:ScanList()
 end
 
 function Scan:ScanItem(itemString)
-	if self.scanningItem then return end -- don't disrupt current scan
-
 	self.itemString = itemString
 	self.currPage = 0 -- pages start at 0
-	self.scanningItem = true
 
 	-- QueryAuctionItems(text, minLevel, maxLevel, page, usable, rarity, getAll, exactMatch, filterData)
 	QueryAuctionItems(self.itemString, nil, nil, self.currPage,
 			nil, 0, false, true, nil)
-
 	self.queryProgress = true
 end
 
 function Scan:ScanNextPage()
-	if not self.scanningItem then -- scan complete
-		self:ScanList()
-	end 
-
-	local canQuery = CanSendAuctionQuery()
-	if not canQuery then
+	if not CanSendAuctionQuery() then
 		Scan:ScheduleTimer('ScanNextPage', 0.05)
-	else
-		print('qry')
-		self.currPage = self.currPage + 1
-		QueryAuctionItems(self.itemString, nil, nil, self.currPage,
-			nil, 0, false, true, nil)
-		self.queryProgress = true 
+		return
 	end
+
+	self.currPage = self.currPage + 1
+	QueryAuctionItems(self.itemString, nil, nil, self.currPage,
+		nil, 0, false, true, nil)
+	self.queryProgress = true 
 end
 
+function Scan:IsLastPage(pageNum)
+	return (self.currPage + 1) * 50 > self.numTotalAuctions
+end
+
+-- stores temprorary page data, returns true
 function Scan:StorePageData(pageNum)
+	self.noOwner = false
 	self.currPageInfo = {}
 	self.currPageInfo.pageNum = pageNum
-	self.currPageInfo.auctionInfo  = {}
+	self.currPageInfo.auctionData  = {}
 
 	self.currPageInfo.numPageAuctions, self.numTotalAuctions = GetNumAuctionItems("list")
 
-	self.name = select(1, GetAuctionItemInfo('list', 1))
-	print('test capture data for page' .. tostring(pageNum).. ' '.. self.name)
+	local auctionData = {}
 
-	if (self.currPage + 1) * 50 > self.numTotalAuctions then
-		self.scanningItem = false
-		print('finished scanning '.. self.name)
+	
+	for i = 1, self.currPageInfo.numPageAuctions do
+		auctionData = {}
+		-- name, texture, count, quality, canUse, level, levelColHeader, minBid, minIncrement,
+   		-- buyoutPrice, bidAmount, highBidder, bidderFullName, owner, ownerFullName, 
+		-- saleStatus, itemId, hasAllInfo = GetAuctionItemInfo("list", i)
+
+		auctionData.owner = select(14, GetAuctionItemInfo("list", i))
+		if auctionData.owner == nil then -- incomplete data, not latest update
+			self.noOwner = true
+			return
+		end
+
+		auctionData.buy = select(10, GetAuctionItemInfo("list", i))
+		auctionData.count = select(3, GetAuctionItemInfo("list", i))
+		auctionData.timeLeft = GetAuctionItemTimeLeft("list", i)
+		self.currPageInfo.auctionData[i] = auctionData
 	end
+
+	Multiboxer.db.test = Multiboxer.db.test or {}
+	Multiboxer.db.test[self.itemString..pageNum] = self.currPageInfo.auctionData
+
+	print('stored ' .. self.itemString .. ' page ' .. tostring(pageNum))
 end
 
