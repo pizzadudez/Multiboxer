@@ -26,6 +26,7 @@ end
 function Scan:AUCTION_ITEM_LIST_UPDATE()
 	-- TODO: find a way to only fire this after a chunk of list updates
 	-- so the data is complete
+	print('update')
 	if self.activeScan and self.queryProgress then
 		Scan:StorePageData(self.currPage)
 		self.queryProgress = false
@@ -73,6 +74,7 @@ function Scan:ScanNextPage()
 	local canQuery = CanSendAuctionQuery()
 
 	if not canQuery then
+		print("waiting")
 		Scan:ScheduleTimer('ScanNextPage', 0.05)
 	else
 		self.currPage = self.currPage + 1
