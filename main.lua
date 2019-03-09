@@ -9,13 +9,16 @@ _G[addonName] = Multiboxer
 -- StdUi Lib
 local StdUi = LibStub('StdUi')
 
+
 function Multiboxer:OnInitialize()
 	self:RegisterEvent('AUCTION_HOUSE_SHOW')
 	self:RegisterEvent('AUCTION_HOUSE_CLOSED')
 
 	self:EnableModule('Scan')
 
-	Multiboxer.auctionTabs = {}
+	self.db = MultiboxerDB or {}
+
+	Multiboxer.auctionTabs = {} -- table containing the addon's ah tabs
 end
 
 function Multiboxer:AUCTION_HOUSE_SHOW()

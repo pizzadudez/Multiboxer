@@ -8,6 +8,7 @@ Scan = Multiboxer:GetModule('Scan')
 -- module object
 local Tab = Multiboxer:NewModule('Tab', 'AceEvent-3.0')
 
+
 function Tab:Enable()
     -- never redraw the tab, show/hide the frame instead!
     if self.tabAdded then return end
