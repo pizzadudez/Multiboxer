@@ -30,6 +30,10 @@ function Multiboxer:AUCTION_HOUSE_SHOW()
 		self:Hook('AuctionFrameTab_OnClick', true)
 		self.onTabClickHooked = true
 	end
+
+	-- make our tab the default opening tab
+	-- seems to conflict with TSM
+	AuctionFrameTab_OnClick(self.auctionTabs[1].tabButton)
 end
 
 function Multiboxer:AUCTION_HOUSE_CLOSED()

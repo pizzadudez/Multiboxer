@@ -16,17 +16,57 @@ function Tab:Enable()
     self.auctionTab = Multiboxer:AddAuctionHouseTab('Multiboxer', 'Multiboxer Auctions', self)
     self.tabAdded = true 
 
-    -- DELETEME
-    self:TestScanButton()
+    Scan.scanList = {152505,152510,152509,152507,152511,152506,152508} 
+    self:DrawScanList()
+    self:ScanButton()
+end
+
+function Tab:DrawScanList()
+    
+    local auctionTab = self.auctionTab
+    local scanListFrame = StdUi:Frame(auctionTab, 200, 60)
+	scanListFrame:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 50, -60)
+
+	scanListFrame.items = scanListFrame.items or {}
+	scanListFrame.items[0] = scanListFrame
+	for i, itemID in ipairs({152505,152510,152509,152507,152511,152506,152508}) do
+
+        local item = StdUi:Checkbox(scanListFrame, 24, 24)
+        scanListFrame.items[i] = item
+        item:SetPoint('LEFT', scanListFrame.items[i-1], 'RIGHT', 4, 0)
+        item:SetChecked(true)
+        item.OnValueChanged = function(self, state, value)
+            Tab:CreateScanList()
+		end
+		
+		local textureID = GetItemTextureID(itemID)
+		item.texture = StdUi:Texture(item, 24, 24, textureID)
+		item.texture:SetPoint("BOTTOM", item, "TOP", 0, 0)
+	end
+    scanListFrame.items[1]:SetPoint('TOPLEFT', scanListFrame, 'TOPLEFT', 3, -20)
+
+    auctionTab.scanListFrame = scanListFrame
+end
+
+function Tab:CreateScanList()
+    Scan.scanList = {}
+
+    local scanListFrame = self.auctionTab.scanListFrame
+    for i, itemID in ipairs({152505,152510,152509,152507,152511,152506,152508}) do
+        if scanListFrame.items[i].isChecked then
+            tinsert(Scan.scanList, itemID)
+        end
+    end
+
+    print(table.concat(Scan.scanList,', '))
 end
 
 -- Tests Scan functionality
-function Tab:TestScanButton()
+function Tab:ScanButton()
     local auctionTab = self.auctionTab
-    local btn = StdUi:Button(auctionTab, 60, 30, 'SCAN TEST')
-    btn:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 20, -20)
+    local btn = StdUi:Button(auctionTab, 100, 40, 'Scan List')
+    btn:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 20, -200)
     btn:SetScript('OnClick', function()
-	    Scan.scanList = {152505, 152509, 152507, 152510}
 	    Scan:ScanList()
     end)
 end

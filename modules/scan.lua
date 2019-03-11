@@ -162,7 +162,7 @@ function Scan:MultiboxAuctions()
 	local scanData = Multiboxer.db['scanData'][realmName]
 	scanData[self.itemID] = scanData[self.itemID] or {}
 	scanData[self.itemID]['scanData'] = self.scanDataSorted
-	scanData[self.itemID]['scanTime'] = date("%d/%m/%y %H:%M:%S")
+	scanData[self.itemID]['scanTime'] = time()
 	-- tell MultiboxAuctions we have new data
 	C_ChatInfo.SendAddonMessage("Multiboxer", "NEW_SCAN_DATA", "WHISPER", UnitName("player"))
 end
