@@ -18,6 +18,7 @@ function Multiboxer:OnInitialize()
 
 	self.db = MultiboxerDB or {}
 	MultiboxerDB = self.db
+	self.db.scanData = self.db.scanData or {}
 
 	Multiboxer.auctionTabs = {} -- table containing the addon's ah tabs
 end

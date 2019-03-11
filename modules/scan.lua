@@ -20,6 +20,8 @@ function Scan:AUCTION_HOUSE_SHOW()
 end
 
 function Scan:AUCTION_HOUSE_CLOSED()
+	self:UnregisterEvent('AUCTION_ITEM_LIST_UPDATE')
+	self.queryProgress = false
 	--self:UnregisterEvent('AUCTION_MULTISELL_UPDATE')
 	--self:UnregisterEvent('UI_ERROR_MESSAGE')
 end
@@ -27,12 +29,12 @@ end
 function Scan:AUCTION_ITEM_LIST_UPDATE()
 	-- first update or previous update was incomplete
 	if self.queryProgress then
-		self:StorePageData(self.currPage)
+		self:StorePageData()
 		-- no missing auction owners -> we can proceed to next page
-		if self.noOwner == false then
+		if self.missingOwner == false then
 			self.queryProgress = false
 
-			if self:IsLastPage(self.currPage) then
+			if self:IsLastPage() then
 				self:ScanList()
 			else
 				self:ScanNextPage()
@@ -47,15 +49,20 @@ function Scan:ScanList()
 		return
 	end
 
-	local itemString = table.remove(self.scanList, 1)
-	if itemString then
-		self:ScanItem(itemString)
+	local itemID = table.remove(self.scanList, 1)
+	if itemID then
+		SortAuctionSetSort('list', 'unitprice')
+		SortAuctionApplySort('list')
+		self:ScanItem(itemID)
 	end
 end
 
-function Scan:ScanItem(itemString)
-	self.itemString = itemString
+function Scan:ScanItem(itemID)
+	self.itemID = itemID
+	self.itemString = select(1, GetItemInfo(itemID))
 	self.currPage = 0 -- pages start at 0
+	self.scanData = {}
+	self.scanDataSorted = {}
 
 	-- QueryAuctionItems(text, minLevel, maxLevel, page, usable, rarity, getAll, exactMatch, filterData)
 	QueryAuctionItems(self.itemString, nil, nil, self.currPage,
@@ -75,23 +82,19 @@ function Scan:ScanNextPage()
 	self.queryProgress = true 
 end
 
-function Scan:IsLastPage(pageNum)
+function Scan:IsLastPage()
 	return (self.currPage + 1) * 50 > self.numTotalAuctions
 end
 
 -- stores temprorary page data, returns true
-function Scan:StorePageData(pageNum)
-	self.noOwner = false
-	self.currPageInfo = {}
-	self.currPageInfo.pageNum = pageNum
-	self.currPageInfo.auctionData  = {}
-
-	self.currPageInfo.numPageAuctions, self.numTotalAuctions = GetNumAuctionItems("list")
-
+function Scan:StorePageData()
+	self.missingOwner = false
+	self.currPageAuctions = {}
+	
+	self.numPageAuctions, self.numTotalAuctions = GetNumAuctionItems("list")
 	local auctionData = {}
 
-	
-	for i = 1, self.currPageInfo.numPageAuctions do
+	for i = 1, self.numPageAuctions do
 		auctionData = {}
 		-- name, texture, count, quality, canUse, level, levelColHeader, minBid, minIncrement,
    		-- buyoutPrice, bidAmount, highBidder, bidderFullName, owner, ownerFullName, 
@@ -99,19 +102,67 @@ function Scan:StorePageData(pageNum)
 
 		auctionData.owner = select(14, GetAuctionItemInfo("list", i))
 		if auctionData.owner == nil then -- incomplete data, not latest update
-			self.noOwner = true
+			self.missingOwner = true
 			return
 		end
 
-		auctionData.buy = select(10, GetAuctionItemInfo("list", i))
-		auctionData.count = select(3, GetAuctionItemInfo("list", i))
+		auctionData.stackSize = select(3, GetAuctionItemInfo("list", i))
+		auctionData.price = select(10, GetAuctionItemInfo("list", i)) / auctionData.stackSize / 10000
 		auctionData.timeLeft = GetAuctionItemTimeLeft("list", i)
-		self.currPageInfo.auctionData[i] = auctionData
+		self.currPageAuctions[i] = auctionData
 	end
 
-	Multiboxer.db.test = Multiboxer.db.test or {}
-	Multiboxer.db.test[self.itemString..pageNum] = self.currPageInfo.auctionData
+	self:CuratePageData()
+	self:MultiboxAuctions() -- temporary integration for MultiboxAuctions
 
-	print('stored ' .. self.itemString .. ' page ' .. tostring(pageNum))
+	print('stored ' .. self.itemString .. ' page ' .. tostring(self.currPage))
 end
 
+function Scan:CuratePageData()
+	for i = 1, self.numPageAuctions do
+		local auction = self.currPageAuctions[i]
+		
+		if self:IsValidStackSize(auction.stackSize) then
+			local scanData = self.scanData
+			local hashKey = auction.price .. '_' .. auction.stackSize .. '_' .. 
+				auction.owner .. '_' .. auction.timeLeft
+
+			if scanData[hashKey] then
+				scanData[hashKey].qty = scanData[hashKey].qty + 1
+			else
+				local auctionData = auction
+				auctionData.qty = 1
+				scanData[hashKey] =  auctionData
+			end
+		end
+	end
+	
+	self:SortScanData()
+end
+
+function Scan:SortScanData()
+	local n = 0
+	for hashKey, auctionData in pairs(self.scanData) do
+		n = n + 1
+		self.scanDataSorted[n] = auctionData
+	end
+
+	table.sort (self.scanDataSorted, function (a, b) return a.price < b.price end)
+end
+
+function Scan:IsValidStackSize(stackSize)
+	return stackSize == 200 or stackSize == 100
+end
+
+function Scan:MultiboxAuctions()
+	-- MultiboxAuctions integration
+	local realmName = GetRealmName()
+	Multiboxer.db['scanData'] = Multiboxer.db['scanData'] or {}
+	Multiboxer.db['scanData'][realmName] = Multiboxer.db['scanData'][realmName] or {}
+	local scanData = Multiboxer.db['scanData'][realmName]
+	scanData[self.itemID] = scanData[self.itemID] or {}
+	scanData[self.itemID]['scanData'] = self.scanDataSorted
+	scanData[self.itemID]['scanTime'] = date("%d/%m/%y %H:%M:%S")
+	-- tell MultiboxAuctions we have new data
+	C_ChatInfo.SendAddonMessage("Multiboxer", "NEW_SCAN_DATA", "WHISPER", UnitName("player"))
+end

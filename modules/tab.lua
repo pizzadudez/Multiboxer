@@ -3,7 +3,7 @@ local Multiboxer = unpack(select(2, ...))
 -- ui lib
 local StdUi = LibStub('StdUi')
 -- Scan module
-Scan = Multiboxer:GetModule('Scan')
+local Scan = Multiboxer:GetModule('Scan')
 
 -- module object
 local Tab = Multiboxer:NewModule('Tab', 'AceEvent-3.0')
@@ -26,7 +26,7 @@ function Tab:TestScanButton()
     local btn = StdUi:Button(auctionTab, 60, 30, 'SCAN TEST')
     btn:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 20, -20)
     btn:SetScript('OnClick', function()
-	    Scan.scanList = {"Riverbud", "Siren's Pollen", "Akunda's Bite"}
+	    Scan.scanList = {152505, 152509, 152507, 152510}
 	    Scan:ScanList()
     end)
 end
