@@ -1,7 +1,5 @@
 -- addon object
 local Multiboxer = unpack(select(2, ...))
--- ui lib
-local StdUi = LibStub('StdUi')
 
 -- module object
 local Scan = Multiboxer:NewModule('Scan', 'AceEvent-3.0', 'AceTimer-3.0')

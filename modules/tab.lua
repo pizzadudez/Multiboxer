@@ -4,6 +4,7 @@ local Multiboxer = unpack(select(2, ...))
 local StdUi = LibStub('StdUi')
 -- Scan module
 local Scan = Multiboxer:GetModule('Scan')
+local Post = Multiboxer:GetModule('Post')
 
 -- module object
 local Tab = Multiboxer:NewModule('Tab', 'AceEvent-3.0')
@@ -71,3 +72,44 @@ function Tab:ScanButton()
     end)
 end
 
+-- create a sell table for selling
+function Tab:GeneratePostTable()
+    local postTable = {
+        [2589] = 2,
+        [152509] = 5,
+        [52984] = 3,
+    }
+    local stackSize, price = 2, 150000
+    Post.postTable = {}
+
+    for itemID, count in pairs(postTable) do
+        local auctionData = {}
+        auctionData.itemID = itemID
+        auctionData.stackSize = stackSize
+        auctionData.price = price
+
+        for i = 1, count do
+            tinsert(Post.postTable, auctionData)
+        end
+    end
+end
+
+-- Slash Command List
+SLASH_Multiboxer1 = '/mboxer'
+SLASH_Multiboxer2 = '/mb'
+SlashCmdList['Multiboxer'] = function(argString) Tab:SlashCommand(argString) end
+
+function Tab:SlashCommand(argString)
+	local args = {strsplit(" ", argString)}
+	local cmd = table.remove(args, 1)
+
+    if cmd == 'post' then
+        if not Post.postTable then
+            self:GeneratePostTable()
+            print(Post.postTable)
+        end
+        Post:SellItem()
+	else
+		print('Multiboxer:')
+	end
+end

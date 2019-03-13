@@ -15,6 +15,7 @@ function Multiboxer:OnInitialize()
 	self:RegisterEvent('AUCTION_HOUSE_CLOSED')
 
 	self:EnableModule('Scan')
+	self:EnableModule('Post')
 
 	self.db = MultiboxerDB or {}
 	MultiboxerDB = self.db
