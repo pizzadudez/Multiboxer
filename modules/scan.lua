@@ -52,6 +52,8 @@ function Scan:ScanList()
 		SortAuctionSetSort('list', 'unitprice')
 		SortAuctionApplySort('list')
 		self:ScanItem(itemID)
+	else
+		self.finished:Show()
 	end
 end
 
