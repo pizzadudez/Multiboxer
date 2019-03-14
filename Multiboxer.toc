@@ -20,6 +20,6 @@ main.lua
 modules\scan.lua
 modules\post.lua
 modules\cancel.lua
-modules\tab.lua
+modules\tab\tab.lua
 
 scanData.lua
