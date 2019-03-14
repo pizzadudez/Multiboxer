@@ -22,33 +22,33 @@ function Tab:Enable()
 	self:ScanButton()
 	self:Finished()
 	
-	self:DrawItemFrame()
-	self:DrawAuctionsFrame()
+
+	--self:DrawAuctionsFrame()
 end
 
 function Tab:DrawAuctionsFrame()
-	local panel, scrollFrame, scrollChild, scrollBar = StdUi:FauxScrollFrame(self.auctionTab, 70, 320, 16, 20)
-	panel:SetPoint('TOPLEFT', self.auctionTab, 'TOPLEFT', 30, -80)
-	-- scrollBar.panel:Hide()
-	-- scrollBar:Hide()
-	-- scrollBar.ScrollUpButton:Hide()
-	-- scrollBar.ScrollDownButton:Hide()
-end
+	local auctionTab = self.auctionTab
+	local cols = {
+		{name = 'Qty', width = 24, align = 'LEFT', index = 'qty', format = 'number'},
+		{name = 'Price', width = 32, align = 'LEFT', index = 'price', format = 'number'}
+	}
+	local sTable = StdUi:ScrollTable(auctionTab, cols, 16, 18)
+	sTable:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 50, -90)
+	sTable:EnableSelection(true)
 
-function Tab:DrawItemFrame()
-	local itemData = Multiboxer.db.scanData['Antonidas'][152509].scanData
-
-	local auctions = {}
-	self.itemFrame = StdUi:Frame(self.auctionTab, 600, 50)
-
-	auctions[0] = self.itemFrame
-	--for i, auctionData in ipairs(itemData) do
-	for i = 1, 50 do
-		auctions[i] = StdUi:Button(self.auctionTab, 50, 20, 'test')
-		auctions[i]:SetPoint('TOP', auctions[i-1], 'BOTTOM', 0, 0)
+	local data = {}
+	local itemData = Multiboxer.db['scanData']['Antonidas'][152509]['scanData']
+	for i, auctionData in ipairs(itemData) do
+		local auction = {}
+		auction.qty = auctionData.qty
+		auction.price = math.floor(auctionData.price * 100) / 100
+		tinsert(data, auction)
 	end
 
-	auctions[1]:SetPoint('TOPLEFT', auctions[0], 'TOPLEFT', 0, 0)
+	sTable:SetData(data)
+	sTable:Show()
+	
+	auctionTab.sTable = sTable
 end
 
 function Tab:DrawScanList()

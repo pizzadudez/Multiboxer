@@ -1,5 +1,3 @@
 Libs/
-scan_structure.txt
-post_doc.txt
-cancel_doc.txt
+documentation/
 scanData.lua
