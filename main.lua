@@ -44,6 +44,7 @@ end
 -- Handler func for clicking on ah tabs
 function Multiboxer:AuctionFrameTab_OnClick(tab)
 	AuctionPortraitTexture:Show() -- ??
+	AuctionFrameMoneyFrame:Show() -- default money frame bottom left
 
 	-- Hide our own tabs when changing tab
 	for i = 1, #self.auctionTabs do
@@ -53,6 +54,7 @@ function Multiboxer:AuctionFrameTab_OnClick(tab)
 	-- If the tab we change to is ours show it
 	if tab.multiboxerTab then
 		tab.multiboxerTab:Show()
+		AuctionFrameMoneyFrame:Hide()
 	end
 end
 

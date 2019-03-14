@@ -17,14 +17,87 @@ function Tab:Enable()
 	self.auctionTab = Multiboxer:AddAuctionHouseTab('Multiboxer', 'Multiboxer Auctions', self)
 	self.tabAdded = true 
 
+	self:DrawSellFrame()
+
+	-- for testing purposes not final
 	Scan.scanList = {152505,152510,152509,152507,152511,152506,152508} 
 	self:DrawScanList()
 	self:ScanButton()
 	self:Finished()
-	
-
 	--self:DrawAuctionsFrame()
 end
+
+local sellFrameSettings = {
+
+}
+
+function Tab:DrawSellFrame()
+	-- CHANGE source to db
+	local itemList = {152505,152510,152509,152507,152511,152506,152508}
+	local auctionTab = self.auctionTab
+	local itemFrameHeight = 30
+
+	local sellFrame = StdUi:Frame(auctionTab, 160, itemFrameHeight * #itemList)
+	sellFrame:SetPoint('TOPLEFT', auctionTab, 'BOTTOMLEFT', 11, 230)
+
+	local itemFrames = {}
+	sellFrame.itemFrames = itemFrames
+	itemFrames[0] = sellFrame
+
+	for i, itemID in ipairs(itemList) do
+		local itemFrame = StdUi:Panel(sellFrame, 162, itemFrameHeight)
+		itemFrame.itemID = itemID
+		itemFrames[i] = itemFrame
+		itemFrames[itemID] = itemFrame -- so we can access itemFrame by itemID
+		itemFrame:SetPoint('TOP', itemFrames[i-1], 'BOTTOM', 0, 0)
+		
+		-- Icon texture
+		local icon = StdUi:Texture(itemFrame, 26, 26, GetItemIcon(itemFrame.itemID))
+		icon:SetPoint('LEFT', itemFrame, 'LEFT', 90, 0)
+		itemFrame.icon = icon
+
+		-- Number of stacks to post
+		local stackCount = StdUi:HighlightButton(itemFrame, 26, 26, '48')
+		stackCount:SetPoint('RIGHT', icon, 'LEFT', 0, 0)
+		stackCount:SetHighlightTexture(nil)
+		stackCount.text:SetFontSize(16)
+		stackCount:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
+		stackCount:SetScript('OnClick', function(self, button)
+			local sCount = tonumber(stackCount.text:GetText())
+			if button == 'LeftButton' then
+				stackCount.text:SetText(sCount + 12)
+			elseif button == 'RightButton' then
+				stackCount.text:SetText(math.max(sCount - 12, 0))
+			end
+		end)
+		itemFrame.stackCount = stackCount
+
+		-- Number of stacks available in inventory + bank
+		local inventory = StdUi:Label(itemFrame, '89', 14)
+		inventory:SetPoint('RIGHT', icon, 'LEFT', -30, 0)
+
+		-- Number of stacks cheaper than our price
+		local numCheaper = StdUi:Label(itemFrame, '13', 14)
+		numCheaper:SetPoint('RIGHT', icon, 'LEFT', -60, 0)
+		itemFrame.numCheaper = numCheaper
+
+		-- Price per unit in gold
+		local price = StdUi:Label(itemFrame, '44.99', 12)
+		price:SetPoint('LEFT', icon, 'RIGHT', 6, 0)
+		itemFrame.price = price
+	end
+
+	-- Glue first itemFrame to sellFrame
+	if itemFrames[1] then
+		itemFrames[1]:SetPoint('TOPLEFT', sellFrame, 'TOPLEFT', 0, 0)
+	end
+
+	auctionTab.sellFrame = sellFrame
+end
+
+
+
+---------------------------------- testing -----------------
 
 function Tab:DrawAuctionsFrame()
 	local auctionTab = self.auctionTab
