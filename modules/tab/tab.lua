@@ -99,8 +99,10 @@ function Tab:DrawSettingsFrame()
 end
 
 function Tab:DrawSellFrame()
-	-- CHANGE source to db
-	local itemList = {152505,152510,152509,152507,152511,152506,152508}
+	-- if we don't have an itemList we don't need to draw
+	if not self.itemList then return end 
+
+	local itemList = self.itemList
 	local auctionTab = self.auctionTab
 	local itemFrameHeight = 30
 
@@ -111,9 +113,15 @@ function Tab:DrawSellFrame()
 	sellFrame.itemFrames = itemFrames
 	itemFrames[0] = sellFrame
 
-	for i, itemID in ipairs(itemList) do
+	for i, item in ipairs(itemList) do
+		local itemID = item.itemID
 		local itemFrame = StdUi:Panel(sellFrame, 162, itemFrameHeight)
+
 		itemFrame.itemID = itemID
+		itemFrame.stackCount = item.stackCount or 0
+		itemFrame.stackCountIncrement = item.stackCountIncrement or 
+			self.settings.stackCountIncrement
+
 		itemFrames[i] = itemFrame
 		itemFrames[itemID] = itemFrame -- so we can access itemFrame by itemID
 		itemFrame:SetPoint('TOP', itemFrames[i-1], 'BOTTOM', 0, 0)
@@ -124,7 +132,7 @@ function Tab:DrawSellFrame()
 		itemFrame.icon = icon
 
 		-- Number of stacks to post
-		local stackCount = StdUi:HighlightButton(itemFrame, 26, 26, '48')
+		local stackCount = StdUi:HighlightButton(itemFrame, 26, 26, itemFrame.stackCount)
 		stackCount:SetPoint('RIGHT', icon, 'LEFT', 0, 0)
 		stackCount:SetHighlightTexture(nil)
 		stackCount.text:SetFontSize(16)
@@ -132,10 +140,12 @@ function Tab:DrawSellFrame()
 		stackCount:SetScript('OnClick', function(self, button)
 			local sCount = tonumber(stackCount.text:GetText())
 			if button == 'LeftButton' then
-				stackCount.text:SetText(sCount + 12)
+				stackCount.text:SetText(sCount + itemFrame.stackCountIncrement)
 			elseif button == 'RightButton' then
-				stackCount.text:SetText(math.max(sCount - 12, 0))
+				stackCount.text:SetText(math.max(sCount - itemFrame.stackCountIncrement, 0))
 			end
+			-- update settings when value changes
+			Tab.itemList[i].stackCount = tonumber(stackCount.text:GetText())
 		end)
 		itemFrame.stackCount = stackCount
 
