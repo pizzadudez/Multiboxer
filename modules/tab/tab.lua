@@ -7,17 +7,20 @@ local Scan = Multiboxer:GetModule('Scan')
 local Post = Multiboxer:GetModule('Post')
 
 -- module object
-local Tab = Multiboxer:NewModule('Tab', 'AceEvent-3.0')
+local Tab = Multiboxer:NewModule('Tab', 'AceEvent-3.0', 'AceHook-3.0')
 
 
 function Tab:Enable()
 	-- never redraw the tab, show/hide the frame instead!
-	if self.tabAdded then return end
+	if not self.tabAdded then 
+		self.auctionTab = Multiboxer:AddAuctionHouseTab('Multiboxer', 'Multiboxer Auctions', self)
+		self.tabAdded = true 
+	end
 
-	self.auctionTab = Multiboxer:AddAuctionHouseTab('Multiboxer', 'Multiboxer Auctions', self)
-	self.tabAdded = true 
+	self:SetSettings()
 
 	self:DrawSellFrame()
+	self:DrawSettingsFrame()
 
 	-- for testing purposes not final
 	Scan.scanList = {152505,152510,152509,152507,152511,152506,152508} 
@@ -27,9 +30,73 @@ function Tab:Enable()
 	--self:DrawAuctionsFrame()
 end
 
-local sellFrameSettings = {
+function Tab:SetSettings()
+	-- We only create a profile when the user selects an itemList
+	-- by clicking one of the itemList radio buttons
+	if not Multiboxer.db.settings[Multiboxer.profileName] then
+		self.noProfile = true
+		return
+	end
 
-}
+	self.noProfile = false
+	self.settings = Multiboxer.db.settings[Multiboxer.profileName]
+	self.activeItemList = self.settings.activeItemList
+	self.itemList = self.settings.itemLists[self.activeItemList]
+end
+
+function Tab:DrawSettingsFrame()
+	local auctionTab = self.auctionTab
+	local settingsFrame = StdUi:PanelWithTitle(auctionTab, 200, 330, 'Settings', 60, 16)
+	settingsFrame:SetPoint('TOPRIGHT', auctionTab, 'TOPLEFT', -10, 0)
+
+	-- Open/Close itemList selection Frame
+	local itemList = StdUi:Button(settingsFrame, 70, 24, 'Item List')
+	itemList:SetPoint('TOPLEFT', settingsFrame, 'TOPLEFT', 7, -32)
+	
+	-- Wrapper for itemList radio buttons
+	local itemListFrame = StdUi:Panel(settingsFrame, 80, 60)
+	itemListFrame:SetPoint('TOPLEFT', itemList, 'TOPRIGHT', 5, 0)
+	itemListFrame:Hide()
+
+	-- Radio buttons for selecting itemList
+	local radioButtons = {}
+	radioButtons[0] = itemListFrame
+	local rCount = 0
+
+	for listName, _ in pairs(Multiboxer.db.defaultSettings.itemLists) do
+		rCount = rCount + 1
+		radioButtons[rCount] = StdUi:Radio(itemListFrame, listName, 'itemListsRadios')
+		radioButtons[rCount]:SetValue(listName)
+		radioButtons[rCount]:SetPoint('TOPLEFT', radioButtons[rCount - 1], 'BOTTOMLEFT', 0, 0)
+
+		-- Set checked if this is the current itemList from settings
+		if listName == self.activeItemList then
+			radioButtons[rCount]:SetChecked(true)
+		end
+
+		-- Hook so we don't overwrite the widget creating hook for OnClick
+		self:HookScript(radioButtons[rCount], 'OnClick', function()
+			if not Tab.settings then
+				Multiboxer.db.settings[Multiboxer.profileName] = Multiboxer.db.defaultSettings
+			else
+				Tab.settings.activeItemList = listName
+			end
+			Tab:SetSettings()
+		end)
+	end
+	radioButtons[1]:SetPoint('TOPLEFT', radioButtons[0], 'TOPLEFT', 5, -5)
+
+	-- Show/Hide ItemListFrame
+	itemList:SetScript('OnClick', function()
+		if itemListFrame:IsShown() then
+			itemListFrame:Hide()
+		else
+			itemListFrame:Show()
+		end
+	end)
+
+	auctionTab.settingsFrame = settingsFrame
+end
 
 function Tab:DrawSellFrame()
 	-- CHANGE source to db

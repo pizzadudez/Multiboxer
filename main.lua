@@ -11,15 +11,15 @@ local StdUi = LibStub('StdUi')
 
 
 function Multiboxer:OnInitialize()
+	self:InitDatabase()
+
 	self:RegisterEvent('AUCTION_HOUSE_SHOW')
 	self:RegisterEvent('AUCTION_HOUSE_CLOSED')
 
 	self:EnableModule('Scan')
 	self:EnableModule('Post')
 
-	self.db = MultiboxerDB or {}
-	MultiboxerDB = self.db
-	self.db.scanData = self.db.scanData or {}
+	
 
 	Multiboxer.auctionTabs = {} -- table containing the addon's ah tabs
 end
@@ -96,3 +96,41 @@ function Multiboxer:AddAuctionHouseTab(buttonText, tabTitle, module)
 
     return auctionTab
 end
+
+function Multiboxer:InitDatabase()
+	if not MultiboxerDB or type(MultiboxerDB) ~= 'table' then
+		MultiboxerDB = {}
+	end
+
+	MultiboxerDB.defaultSettings = Multiboxer.defaultSettings
+	self.db = MultiboxerDB 
+	self.db.scanData = self.db.scanData or {}
+	self.db.settings = self.db.settings or {}
+
+	self.profileName = UnitName("player") .. '-' .. GetRealmName()
+end
+
+Multiboxer.defaultSettings = {
+	itemLists = {
+		herbs = {
+			{itemID = 152505, stackCount = 48},
+			{itemID = 152510, stackCount = 6, stackCountIncrement = 3},
+			{itemID = 152509, stackCount = 36},
+			{itemID = 152507, stackCount = 24},
+			{itemID = 152511, stackCount = 12},
+			{itemID = 152506, stackCount = 12},
+			{itemID = 152508, stackCount = 24},
+		},
+		alchemy = {			
+			{itemID = 152639, stackCount = 15},
+			{itemID = 152638, stackCount = 15},
+			{itemID = 152641, stackCount = 15},
+			{itemID = 163222, stackCount = 15},
+			{itemID = 163223, stackCount = 15},
+			{itemID = 163224, stackCount = 15},		
+		}
+	},
+	stackCountIncrement = 12,
+	scanLimit = 200,
+	scanLimitChecked = false
+}
