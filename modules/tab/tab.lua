@@ -28,6 +28,7 @@ function Tab:Enable()
 	self:DrawScanList()
 	self:ScanButton()
 	self:Finished()
+	
 	--self:DrawAuctionsFrame()
 end
 
@@ -278,6 +279,16 @@ function Tab:ScanButton()
 		Scan:ScanList()
 	end)
 end
+
+function Tab:StackButton()
+	local stackBtn = StdUi:Button(UIParent, 70, 40, 'Stack items')
+	stackBtn:SetPoint('CENTER', UIParent, 'CENTER', 200, -100)
+	stackBtn:SetScript('OnClick', function() 
+		Inventory:StackItem(21877) 
+		--Inventory:StackItem(52983)
+	end)
+end
+Tab:StackButton()
 
 function Tab:Finished()
 	local message = StdUi:Label(self.auctionTab, 'SCAN COMPLETE',60)

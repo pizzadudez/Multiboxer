@@ -18,6 +18,7 @@ function Multiboxer:OnInitialize()
 
 	self:EnableModule('Scan')
 	self:EnableModule('Post')
+	self:EnableModule('Inventory')
 
 	
 

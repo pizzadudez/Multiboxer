@@ -71,11 +71,10 @@ function Post:PutItemInSellBox()
 	return true
 end
 
+-- posts unstacked slots last
 function Post:FindItemInInventory()
 	local partialStack = {nil, nil}
 	self.postCache = self.postCache or {}
-
-	self:CombineStacks()
 
 	for bag = 0, 4 do
 		for slot = 1, GetContainerNumSlots(bag) do
@@ -97,55 +96,5 @@ function Post:FindItemInInventory()
 	return unpack(partialStack)
 end
 
-function Post:CombineStacks()
-	local partialMap = {}
 
-	-- find {bag, slot} of every partial stack
-	for bag = 0, 4 do
-		for slot = 1, GetContainerNumSlots(bag) do
-			if GetContainerItemID(bag, slot) == self.itemID then
-				local itemCount = select(2, GetContainerItemInfo(bag, slot))
-				if itemCount < self.stackSize then
-					tinsert(partialMap, {bag, slot, itemCount})
-				end
-			end
-		end
-	end
-
-	if #partialMap <= 1 then return end
-
-	-- combine partials
-	while #partialMap > 1 do
-		local stack1, stack2 = {}, {}
-		stack1.bag, stack1.slot, stack1.count = unpack(partialMap[1])
-		stack2.bag, stack2.slot, stack2.count = unpack(partialMap[#partialMap])
-
-		-- the 2 stacks complete eachother -> remove 1st and last from list
-		if stack1.count + stack2.count == self.stackSize then
-			ClearCursor()
-			PickupContainerItem(stack1.bag, stack1.slot)
-			PickupContainerItem(stack2.bag, stack2.slot)
-
-			tremove(partialMap, 1)
-			tremove(partialMap, #partialMap)
-
-		-- we move the first to the last -> 1st is now empty
-		elseif stack1.count + stack2.count < self.stackSize then
-			ClearCursor()
-			PickupContainerItem(stack1.bag, stack1.slot)
-			PickupContainerItem(stack2.bag, stack2.slot)
-
-			tremove(partialMap, 1)
-			partialMap[#partialMap].count = stack1.count + stack2.count
-		-- place last on 1st -> 1st becomes complete
-		elseif stack1.count + stack2.count > self.stackSize then
-			ClearCursor()
-			PickupContainerItem(stack2.bag, stack2.slot)
-			PickupContainerItem(stack1.bag, stack1.slot)
-
-			tremove(partialMap, 1)
-			partialMap[#partialMap].count = stack1.count + stack2.count - self.stackSize
-		end
-	end
-end
 
