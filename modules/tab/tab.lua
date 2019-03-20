@@ -281,11 +281,15 @@ function Tab:ScanButton()
 end
 
 function Tab:StackButton()
-	local stackBtn = StdUi:Button(UIParent, 70, 40, 'Stack items')
-	stackBtn:SetPoint('CENTER', UIParent, 'CENTER', 200, -100)
-	stackBtn:SetScript('OnClick', function() 
-		Inventory:StackItem(21877) 
-		--Inventory:StackItem(52983)
+	local stackBtn = StdUi:Button(UIParent, 36, 20, 'Stack')
+	stackBtn:SetPoint('TOPRIGHT', UIParent, 'TOPRIGHT', -44, -150)
+	stackBtn:SetScript('OnClick', function()
+		if not self.itemList then return end
+		local itemList = {}
+		for _, item in ipairs(self.itemList) do
+			tinsert(itemList, item.itemID)
+		end
+		Inventory:StackItems(itemList) 
 	end)
 end
 Tab:StackButton()
