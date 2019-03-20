@@ -5,6 +5,7 @@ local StdUi = LibStub('StdUi')
 -- other modules
 local Scan = Multiboxer:GetModule('Scan')
 local Post = Multiboxer:GetModule('Post')
+local Inventory = Multiboxer:GetModule('Inventory')
 
 -- module object
 local Tab = Multiboxer:NewModule('Tab', 'AceEvent-3.0', 'AceHook-3.0')
@@ -12,10 +13,10 @@ local Tab = Multiboxer:NewModule('Tab', 'AceEvent-3.0', 'AceHook-3.0')
 
 function Tab:Enable()
 	-- never redraw the tab, show/hide the frame instead!
-	if not self.tabAdded then 
-		self.auctionTab = Multiboxer:AddAuctionHouseTab('Multiboxer', 'Multiboxer Auctions', self)
-		self.tabAdded = true 
-	end
+	if self.tabAdded then return end
+	
+	self.auctionTab = Multiboxer:AddAuctionHouseTab('Multiboxer', 'Multiboxer Auctions', self)
+	self.tabAdded = true 
 
 	self:SetSettings()
 
@@ -23,7 +24,7 @@ function Tab:Enable()
 	self:DrawSettingsFrame()
 
 	-- for testing purposes not final
-	Scan.scanList = {152505,152510,152509,152507,152511,152506,152508} 
+	Scan.scanList = {152505,152510,152507,152509,152511,152506,152508} 
 	self:DrawScanList()
 	self:ScanButton()
 	self:Finished()
@@ -172,7 +173,35 @@ function Tab:DrawSellFrame()
 	auctionTab.sellFrame = sellFrame
 end
 
+function Tab:CreatePostList()
+	local stackSize = 200 -- CHANGEME
+	Post.postList = {}
+	local itemList = self.itemList
+	
+	itemList = {
+		{itemID = 21877, stackCount = 21},
+	}
 
+	for _, item in pairs(itemList) do
+		local itemID = item.itemID
+		--local price = Multiboxer.db.scanData[GetRealmName()][itemID].postPrice or nil
+		price = 2
+		-- if we got a posting Price add to Post List
+		if price then
+			local invStacks = Inventory:StackCount(itemID, stackSize)
+			local stackCount = math.min(item.stackCount, invStacks)
+
+			for i = 1, stackCount do
+				local postData = {}
+				postData.itemID = itemID
+				postData.stackSize = stackSize
+				-- When posting price must be in coppers so we must *10000
+				postData.price = price * 10000
+				tinsert(Post.postList, postData)
+			end
+		end
+	end
+end
 
 ---------------------------------- testing -----------------
 
@@ -259,28 +288,6 @@ function Tab:Finished()
 	Scan.finished = message
 end
 
--- create a sell table for selling
-function Tab:GeneratePostTable()
-	local postTable = {
-		[2589] = 2,
-		[152509] = 5,
-		[52984] = 3,
-	}
-	local stackSize, price = 2, 150000
-	Post.postTable = {}
-
-	for itemID, count in pairs(postTable) do
-		local auctionData = {}
-		auctionData.itemID = itemID
-		auctionData.stackSize = stackSize
-		auctionData.price = price
-
-		for i = 1, count do
-			tinsert(Post.postTable, auctionData)
-		end
-	end
-end
-
 -- Slash Command List
 SLASH_Multiboxer1 = '/mboxer'
 SLASH_Multiboxer2 = '/mb'
@@ -291,11 +298,14 @@ function Tab:SlashCommand(argString)
 	local cmd = table.remove(args, 1)
 
 	if cmd == 'post' then
-		if not Post.postTable then
-			self:GeneratePostTable()
-			print(Post.postTable)
+		if not Post.postList or #Post.postList < 1 then
+			self:CreatePostList()
 		end
+		-- Post.itemID = 21877
+		-- Post.stackSize = 200
+		-- Post:CombineStacks()
 		Post:SellItem()
+		print(#Post.postList)
 	else
 		print('Multiboxer:')
 	end
