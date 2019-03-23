@@ -6,32 +6,38 @@ local Scan = Multiboxer:GetModule('Scan')
 local Inventory = Multiboxer:NewModule('Inventory', 'AceEvent-3.0')
 
 function Inventory:Enable()
-	self:RegisterEvent('ITEM_UNLOCKED')
+	--
 end
 
 function Inventory:ITEM_UNLOCKED(event, bag, slot)
 	local key = bag .. '-' .. slot
 
 	if self.lockedSlots[key] then
+		print(key)
 		self.lockedSlots[key] = false
 		self.lockedSlotsCount = self.lockedSlotsCount - 1
 		-- last lockedSlot unlocked
 		if self.lockedSlotsCount == 0 then
-			if self.finished then
-				self.stacking = false
-			else
-				self:CombineStacks()
-			end
+			self:CombineStacks()
 		end
 	end
+end
+
+-- Stacks all stackable items in bag
+function Inventory:StackAllItemsInBag()
+	-- TODO
 end
 
 -- Takes array of itemIDs as argument
 function Inventory:StackItems(itemList)
 	-- already in stacking process
-	if self.stacking then return end
+	if self.stacking then
+		print('Stacking process already running')
+		return 
+	end
 
-	--self.stacking = true
+	self:RegisterEvent('ITEM_UNLOCKED')
+	self.stacking = true
 	self.stackTable = {}
 	self.lockedSlots = {}
 	self.lockedSlotsCount = 0
@@ -74,10 +80,11 @@ function Inventory:CreateStackTable()
 end
 
 function Inventory:CombineStacks()
-	self.finished = true
+	self.doneStacking = true
 	
 	for itemID, stackTable in pairs(self.stackTable) do
-		self.finished = false
+		print(itemID)
+		self.doneStacking = false
 		local newStackTable = {}
 		local stackSize = self.stackSize[itemID]
 		
@@ -105,19 +112,29 @@ function Inventory:CombineStacks()
 			i = i + 1
 		end
 
-		-- For odd number of stacks - add middle stack to newStackTable
+		-- For odd number of stacks (>3) - add middle stack to newStackTable
 		if #stackTable % 2 ~= 0 then
 			local middle = math.floor(#stackTable / 2) + 1
 			tinsert(newStackTable, stackTable[middle])
 		end
 
-		-- Sort the new table (this makes last partial stacks be at the end of the bag)
-		table.sort (newStackTable, function (a, b) 
-			return (a.bag < b.bag) or (a.bag == b.bag and a.slot < b.slot)
-		end)
-
-		self.stackTable[itemID] = newStackTable
+		-- if we only added 1 stack to the newStackTable this was our last stacking
+		if #newStackTable > 1 then
+			-- Sort the new table (this makes last partial stacks be at the end of the bag)
+			table.sort (newStackTable, function (a, b) 
+				return (a.bag < b.bag) or (a.bag == b.bag and a.slot < b.slot)
+			end)
+			self.stackTable[itemID] = newStackTable
+		else 
+			self.stackTable[itemID] = nil
+		end
 	end
+
+	if self.doneStacking then
+		self.stacking = false
+		self:UnregisterEvent('ITEM_UNLOCKED')
+	end
+	print(self.doneStacking)
 end
 
 function Inventory:StackCount(itemID, stackSize)

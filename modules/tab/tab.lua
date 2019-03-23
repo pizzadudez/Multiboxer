@@ -32,20 +32,6 @@ function Tab:Enable()
 	--self:DrawAuctionsFrame()
 end
 
-function Tab:SetSettings()
-	-- We only create a profile when the user selects an itemList
-	-- by clicking one of the itemList radio buttons
-	if not Multiboxer.db.settings[Multiboxer.profileName] then
-		self.noProfile = true
-		return
-	end
-
-	self.noProfile = false
-	self.settings = Multiboxer.db.settings[Multiboxer.profileName]
-	self.activeItemList = self.settings.activeItemList
-	self.itemList = self.settings.itemLists[self.activeItemList]
-end
-
 function Tab:DrawSettingsFrame()
 	local auctionTab = self.auctionTab
 	local settingsFrame = StdUi:PanelWithTitle(auctionTab, 200, 330, 'Settings', 60, 16)
@@ -59,6 +45,20 @@ function Tab:DrawSettingsFrame()
 	local itemListFrame = StdUi:Panel(settingsFrame, 80, 60)
 	itemListFrame:SetPoint('TOPLEFT', itemList, 'TOPRIGHT', 5, 0)
 	itemListFrame:Hide()
+
+	local function SelectItemList(listName)
+		if not self.settings then
+			Multiboxer.db.settings[Multiboxer.profileName] = Multiboxer.db.defaultSettings
+		end
+
+		self.activeItemList = listName
+		self:SetSettings()
+		itemListFrame:Hide() -- hide dropDownMenu for itemLists
+
+		if not self.auctionTab.sellFrame then -- first time selecting profile -> draw sellFrame
+			self:DrawSellFrame()
+		end
+	end
 
 	-- Radio buttons for selecting itemList
 	local radioButtons = {}
@@ -77,14 +77,7 @@ function Tab:DrawSettingsFrame()
 		end
 
 		-- Hook so we don't overwrite the widget creating hook for OnClick
-		self:HookScript(radioButtons[rCount], 'OnClick', function()
-			if not Tab.settings then
-				Multiboxer.db.settings[Multiboxer.profileName] = Multiboxer.db.defaultSettings
-			else
-				Tab.settings.activeItemList = listName
-			end
-			Tab:SetSettings()
-		end)
+		self:HookScript(radioButtons[rCount], 'OnClick', function() SelectItemList(listName) end)
 	end
 	radioButtons[1]:SetPoint('TOPLEFT', radioButtons[0], 'TOPLEFT', 5, -5)
 
@@ -98,6 +91,22 @@ function Tab:DrawSettingsFrame()
 	end)
 
 	auctionTab.settingsFrame = settingsFrame
+end
+
+function Tab:SetSettings()
+	-- We only create a profile when the user selects an itemList
+	-- by clicking one of the itemList radio buttons
+	if not Multiboxer.db.settings[Multiboxer.profileName] then
+		self.noProfile = true
+		return
+	end
+
+	self.noProfile = false
+	self.settings = Multiboxer.db.settings[Multiboxer.profileName]
+
+	self.activeItemList = self.activeItemList or self.settings.activeItemList
+	self.settings.activeItemList = self.activeItemList
+	self.itemList = self.settings.itemLists[self.activeItemList]
 end
 
 function Tab:DrawSellFrame()
@@ -231,6 +240,7 @@ function Tab:DrawAuctionsFrame()
 	auctionTab.sTable = sTable
 end
 
+-- Checkbox list for what items to scan
 function Tab:DrawScanList()
 	local auctionTab = self.auctionTab
 	local scanListFrame = StdUi:Frame(auctionTab, 200, 60)
@@ -261,7 +271,7 @@ function Tab:CreateScanList()
 	Scan.scanList = {}
 
 	local scanListFrame = self.auctionTab.scanListFrame
-	for i, itemID in ipairs({152505,152510,152509,152507,152511,152506,152508}) do
+	for i, itemID in ipairs({152505,152510,152507,152509,152511,152506,152508}) do
 		if scanListFrame.items[i].isChecked then
 			tinsert(Scan.scanList, itemID)
 		end
@@ -270,7 +280,6 @@ function Tab:CreateScanList()
 	print(table.concat(Scan.scanList,', '))
 end
 
--- Tests Scan functionality
 function Tab:ScanButton()
 	local auctionTab = self.auctionTab
 	local btn = StdUi:Button(auctionTab, 70, 40, 'Scan List')
@@ -280,6 +289,7 @@ function Tab:ScanButton()
 	end)
 end
 
+-- Temporary
 function Tab:StackButton()
 	local stackBtn = StdUi:Button(UIParent, 36, 20, 'Stack')
 	stackBtn:SetPoint('TOPRIGHT', UIParent, 'TOPRIGHT', -44, -150)
@@ -294,6 +304,7 @@ function Tab:StackButton()
 end
 Tab:StackButton()
 
+-- Scan Finished fontstring
 function Tab:Finished()
 	local message = StdUi:Label(self.auctionTab, 'SCAN COMPLETE',60)
 	message:SetPoint('TOPLEFT', self.auctionTab, 'TOPLEFT', 300, -250)
