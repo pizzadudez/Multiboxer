@@ -13,7 +13,6 @@ function Inventory:ITEM_UNLOCKED(event, bag, slot)
 	local key = bag .. '-' .. slot
 
 	if self.lockedSlots[key] then
-		print(key)
 		self.lockedSlots[key] = false
 		self.lockedSlotsCount = self.lockedSlotsCount - 1
 		-- last lockedSlot unlocked
@@ -83,7 +82,6 @@ function Inventory:CombineStacks()
 	self.doneStacking = true
 	
 	for itemID, stackTable in pairs(self.stackTable) do
-		print(itemID)
 		self.doneStacking = false
 		local newStackTable = {}
 		local stackSize = self.stackSize[itemID]
@@ -134,7 +132,6 @@ function Inventory:CombineStacks()
 		self.stacking = false
 		self:UnregisterEvent('ITEM_UNLOCKED')
 	end
-	print(self.doneStacking)
 end
 
 function Inventory:StackCount(itemID, stackSize)

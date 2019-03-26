@@ -19,9 +19,9 @@ function Tab:Enable()
 	self.tabAdded = true 
 
 	self:SetSettings()
-
 	self:DrawSellFrame()
 	self:DrawSettingsFrame()
+	self:DrawScanDataFrame()
 
 	-- for testing purposes not final
 	Scan.scanList = {152505,152510,152507,152509,152511,152506,152508} 
@@ -211,6 +211,55 @@ function Tab:CreatePostList()
 			end
 		end
 	end
+end
+
+-- ScanData Frame
+function Tab:DrawScanDataFrame()
+	local auctionTab = self.auctionTab
+	local panel, scrollFrame, scrollChild, scrollBar = self:ScrollFrame(auctionTab, 66, 300)
+	panel:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 200, -90)
+
+	-- scrollBar.panel:ClearAllPoints()
+	-- scrollBar.panel:SetPoint('TOPLEFT', panel, 'TOPLEFT', 0, 0)
+	-- scrollBar.panel:Hide()
+
+
+	self.auctionTab.scrollChild = scrollChild
+	self:DrawScanData()
+end
+
+function Tab:DrawScanData()
+	local scrollChild = self.auctionTab.scrollChild
+
+	local createSlide = function(parent, data, i)
+		return Tab:CreateSlide(parent, data)
+	end
+
+	local updateSlide = function(parent, itemFrame, data, i)
+		Tab:UpdateSlide(itemFrame, data)
+		itemFrame.itemIndex = i
+	end
+
+	if not scrollChild.items then
+		scrollChild.items = {}
+	end
+
+	local realmName = GetRealmName()
+	local scanData = Multiboxer.db.scanData[realmName][152505].scanData
+
+	Tab:ObjectList(scrollChild, scrollChild.items, createSlide, updateSlide, scanData, 0, 14, -1)
+end
+
+function Tab:CreateSlide(parent, data)
+	local slide = StdUi:HighlightButton(parent, 50, 20)
+	slide.text:SetText(math.floor(data.price * 100) / 100)
+	slide.qty = StdUi:FontString(slide, data.qty)
+	slide.qty:SetPoint('RIGHT', slide, 'LEFT', 3, 0)
+	return slide
+end
+
+function Tab:UpdateSlide(slide, data)
+	slide.text:SetText(math.floor(data.price * 100) / 100)
 end
 
 ---------------------------------- testing -----------------
