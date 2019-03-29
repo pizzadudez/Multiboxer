@@ -165,4 +165,7 @@ function Scan:MultiboxAuctions()
 	scanData[self.itemID]['scanTime'] = time()
 	-- tell MultiboxAuctions we have new data
 	C_ChatInfo.SendAddonMessage("Multiboxer", "NEW_SCAN_DATA", "WHISPER", UnitName("player"))
+	-- tell this addon to redraw scanData
+	local itemID = tonumber(self.itemID)
+	self:SendMessage('NEW_SCAN_DATA', itemID)
 end

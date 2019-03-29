@@ -21,7 +21,11 @@ function Tab:Enable()
 	self:SetSettings()
 	self:DrawSellFrame()
 	self:DrawSettingsFrame()
-	self:DrawScanDataFrame()
+
+	-- ScanFrame
+	self:DrawScanFrame()
+
+	self:RegisterMessage('NEW_SCAN_DATA')
 
 	-- for testing purposes not final
 	Scan.scanList = {152505,152510,152507,152509,152511,152506,152508} 
@@ -30,6 +34,11 @@ function Tab:Enable()
 	self:Finished()
 	
 	--self:DrawAuctionsFrame()
+end
+
+-- Message from Scan module
+function Tab:NEW_SCAN_DATA(message, itemID)
+	self:DrawScanData(itemID)	
 end
 
 function Tab:DrawSettingsFrame()
@@ -214,22 +223,50 @@ function Tab:CreatePostList()
 end
 
 -- ScanData Frame
-function Tab:DrawScanDataFrame()
+function Tab:DrawScanFrame()
 	local auctionTab = self.auctionTab
-	local panel, scrollFrame, scrollChild, scrollBar = self:ScrollFrame(auctionTab, 66, 300)
-	panel:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 200, -90)
+	local itemList = self.itemList
 
-	-- scrollBar.panel:ClearAllPoints()
-	-- scrollBar.panel:SetPoint('TOPLEFT', panel, 'TOPLEFT', 0, 0)
-	-- scrollBar.panel:Hide()
+	local scanFrame = StdUi:Panel(auctionTab)
+	scanFrame:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 178, -93)
+	scanFrame:SetPoint('BOTTOMRIGHT', auctionTab, 'BOTTOMRIGHT', 0, 10)
+	auctionTab.scanFrame = scanFrame
+	-- draw container frame and stop if no profile selected
+	if not itemList then return end
+
+	local itemFrames = {}
+	local itemFrameWidth = 70
+	local itemFrameHeight = scanFrame:GetHeight()
+	local itemFrameHeaderHeight = 24
+	scanFrame.itemFrames = itemFrames
+	
+	for i, item in ipairs(itemList) do
+		local itemID = item.itemID
+		local itemFrame = {}
+		itemFrame.panel, itemFrame.scrollFrame, itemFrame.auctions = 
+			self:ScrollFrame(scanFrame, itemFrameWidth, itemFrameHeight)
+		itemFrame.panel:SetPoint('TOP', scanFrame, 'TOP', 0, -itemFrameHeaderHeight+1)
+		itemFrame.panel:SetPoint('BOTTOM', scanFrame, 'BOTTOM')
+
+		itemFrame.header = StdUi:Panel(scanFrame, itemFrameWidth, itemFrameHeaderHeight)
+		itemFrame.header:SetPoint('BOTTOM', itemFrame.panel, 'TOP', 0, -1)
 
 
-	self.auctionTab.scrollChild = scrollChild
-	self:DrawScanData()
+		if i == 1 then
+			itemFrame.panel:SetPoint('LEFT', scanFrame, 'LEFT')
+		else
+			itemFrame.panel:SetPoint('LEFT', itemFrames[i-1].panel, 'RIGHT', -1, 0)
+		end
+		-- access this frame by order or itemID
+		itemFrames[i], itemFrames[itemID] = itemFrame, itemFrame
+
+		self:DrawScanData(itemID)
+	end
+	
 end
 
-function Tab:DrawScanData()
-	local scrollChild = self.auctionTab.scrollChild
+function Tab:DrawScanData(itemID)
+	local scrollChild = self.auctionTab.scanFrame.itemFrames[itemID].auctions
 
 	local createSlide = function(parent, data, i)
 		return Tab:CreateSlide(parent, data)
@@ -245,7 +282,7 @@ function Tab:DrawScanData()
 	end
 
 	local realmName = GetRealmName()
-	local scanData = Multiboxer.db.scanData[realmName][152505].scanData
+	local scanData = Multiboxer.db.scanData[realmName][itemID].scanData
 
 	Tab:ObjectList(scrollChild, scrollChild.items, createSlide, updateSlide, scanData, 0, 14, -1)
 end
@@ -254,7 +291,7 @@ function Tab:CreateSlide(parent, data)
 	local slide = StdUi:HighlightButton(parent, 50, 20)
 	slide.text:SetText(math.floor(data.price * 100) / 100)
 	slide.qty = StdUi:FontString(slide, data.qty)
-	slide.qty:SetPoint('RIGHT', slide, 'LEFT', 3, 0)
+	slide.qty:SetPoint('RIGHT', slide, 'LEFT', 8, 0)
 	return slide
 end
 
