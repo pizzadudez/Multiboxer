@@ -17,15 +17,18 @@ function Tab:Enable()
 	
 	self.auctionTab = Multiboxer:AddAuctionHouseTab('Multiboxer', 'Multiboxer Auctions', self)
 	self.tabAdded = true 
+	self.realmName = GetRealmName()
+	self.charName = UnitName('player')
 
 	self:SetSettings()
 	self:DrawSellFrame()
 	self:DrawSettingsFrame()
+	self:DrawStatusBar()
 
 	-- ScanFrame
 	self:DrawScanFrame()
-
 	self:RegisterMessage('NEW_SCAN_DATA')
+
 
 	-- for testing purposes not final
 	Scan.scanList = {152505,152510,152507,152509,152511,152506,152508} 
@@ -38,9 +41,10 @@ end
 
 -- Message from Scan module
 function Tab:NEW_SCAN_DATA(message, itemID)
-	self:DrawScanData(itemID)	
+	self:DrawAuctionList(itemID)	
 end
 
+-- SettingsFrame
 function Tab:DrawSettingsFrame()
 	local auctionTab = self.auctionTab
 	local settingsFrame = StdUi:PanelWithTitle(auctionTab, 200, 330, 'Settings', 60, 16)
@@ -66,6 +70,9 @@ function Tab:DrawSettingsFrame()
 
 		if not self.auctionTab.sellFrame then -- first time selecting profile -> draw sellFrame
 			self:DrawSellFrame()
+		end
+		if not self.auctionTab.scanFrame then -- first time selecting profile -> draw scanFrame
+			self:DrawScanFrame()
 		end
 	end
 
@@ -118,6 +125,7 @@ function Tab:SetSettings()
 	self.itemList = self.settings.itemLists[self.activeItemList]
 end
 
+-- SellFrame
 function Tab:DrawSellFrame()
 	-- if we don't have an itemList we don't need to draw
 	if not self.itemList then return end 
@@ -125,9 +133,10 @@ function Tab:DrawSellFrame()
 	local itemList = self.itemList
 	local auctionTab = self.auctionTab
 	local itemFrameHeight = 30
+	local itemFrameWidth = 168
 
-	local sellFrame = StdUi:Frame(auctionTab, 160, itemFrameHeight * #itemList)
-	sellFrame:SetPoint('TOPLEFT', auctionTab, 'BOTTOMLEFT', 11, 230)
+	local sellFrame = StdUi:Frame(auctionTab, itemFrameWidth, itemFrameHeight * #itemList)
+	sellFrame:SetPoint('BOTTOMLEFT', auctionTab, 'BOTTOMLEFT', 5, 10)
 
 	local itemFrames = {}
 	sellFrame.itemFrames = itemFrames
@@ -135,7 +144,7 @@ function Tab:DrawSellFrame()
 
 	for i, item in ipairs(itemList) do
 		local itemID = item.itemID
-		local itemFrame = StdUi:Panel(sellFrame, 162, itemFrameHeight)
+		local itemFrame = StdUi:Panel(sellFrame, itemFrameWidth, itemFrameHeight)
 
 		itemFrame.itemID = itemID
 		itemFrame.stackCount = item.stackCount or 0
@@ -148,7 +157,7 @@ function Tab:DrawSellFrame()
 		
 		-- Icon texture
 		local icon = StdUi:Texture(itemFrame, 26, 26, GetItemIcon(itemFrame.itemID))
-		icon:SetPoint('LEFT', itemFrame, 'LEFT', 90, 0)
+		icon:SetPoint('LEFT', itemFrame, 'LEFT', 30, 0)
 		itemFrame.icon = icon
 
 		-- Number of stacks to post
@@ -170,17 +179,18 @@ function Tab:DrawSellFrame()
 		itemFrame.stackCount = stackCount
 
 		-- Number of stacks available in inventory + bank
-		local inventory = StdUi:Label(itemFrame, '89', 14)
-		inventory:SetPoint('RIGHT', icon, 'LEFT', -30, 0)
+		local inventory = StdUi:Label(itemFrame, nil, 14)
+		inventory:SetPoint('LEFT', icon, 'RIGHT', 6, 0)
+		inventory:SetText(math.floor(GetItemCount(itemID, true)/200))
 
 		-- Number of stacks cheaper than our price
-		local numCheaper = StdUi:Label(itemFrame, '13', 14)
-		numCheaper:SetPoint('RIGHT', icon, 'LEFT', -60, 0)
+		local numCheaper = StdUi:Label(itemFrame, nil, 14)
+		numCheaper:SetPoint('LEFT', icon, 'RIGHT', 40, 0)
 		itemFrame.numCheaper = numCheaper
 
 		-- Price per unit in gold
-		local price = StdUi:Label(itemFrame, '44.99', 12)
-		price:SetPoint('LEFT', icon, 'RIGHT', 6, 0)
+		local price = StdUi:Label(itemFrame, nil, 12)
+		price:SetPoint('LEFT', icon, 'RIGHT', 68, 0)
 		itemFrame.price = price
 	end
 
@@ -222,20 +232,20 @@ function Tab:CreatePostList()
 	end
 end
 
--- ScanData Frame
+-- ScanFrame
 function Tab:DrawScanFrame()
 	local auctionTab = self.auctionTab
 	local itemList = self.itemList
 
 	local scanFrame = StdUi:Panel(auctionTab)
-	scanFrame:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 178, -93)
-	scanFrame:SetPoint('BOTTOMRIGHT', auctionTab, 'BOTTOMRIGHT', 0, 10)
+	scanFrame:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 177, -81)
+	scanFrame:SetPoint('BOTTOMRIGHT', auctionTab.statusBar, 'TOPRIGHT', 0, 2)
 	auctionTab.scanFrame = scanFrame
 	-- draw container frame and stop if no profile selected
 	if not itemList then return end
 
 	local itemFrames = {}
-	local itemFrameWidth = 70
+	local itemFrameWidth = 74
 	local itemFrameHeight = scanFrame:GetHeight()
 	local itemFrameHeaderHeight = 24
 	scanFrame.itemFrames = itemFrames
@@ -243,14 +253,13 @@ function Tab:DrawScanFrame()
 	for i, item in ipairs(itemList) do
 		local itemID = item.itemID
 		local itemFrame = {}
-		itemFrame.panel, itemFrame.scrollFrame, itemFrame.auctions = 
-			self:ScrollFrame(scanFrame, itemFrameWidth, itemFrameHeight)
+		itemFrame.panel, itemFrame.scrollFrame, itemFrame.auctionsFrame, itemFrame.scrollBar = 
+			self:ScrollFrame(scanFrame, itemFrameWidth, itemFrameHeight-itemFrameHeaderHeight)
 		itemFrame.panel:SetPoint('TOP', scanFrame, 'TOP', 0, -itemFrameHeaderHeight+1)
 		itemFrame.panel:SetPoint('BOTTOM', scanFrame, 'BOTTOM')
 
 		itemFrame.header = StdUi:Panel(scanFrame, itemFrameWidth, itemFrameHeaderHeight)
 		itemFrame.header:SetPoint('BOTTOM', itemFrame.panel, 'TOP', 0, -1)
-
 
 		if i == 1 then
 			itemFrame.panel:SetPoint('LEFT', scanFrame, 'LEFT')
@@ -260,43 +269,147 @@ function Tab:DrawScanFrame()
 		-- access this frame by order or itemID
 		itemFrames[i], itemFrames[itemID] = itemFrame, itemFrame
 
-		self:DrawScanData(itemID)
+		-- no slides drawn yet so hide the scrollbar
+		itemFrame.scrollBar.panel:Hide()
+		itemFrame.scrollBar:Hide()
+
+		self:DrawAuctionList(itemID)
 	end
 	
 end
 
-function Tab:DrawScanData(itemID)
-	local scrollChild = self.auctionTab.scanFrame.itemFrames[itemID].auctions
+function Tab:DrawAuctionList(itemID)
+	local itemFrame = self.auctionTab.scanFrame.itemFrames[itemID]
+	local auctionsFrame = itemFrame.auctionsFrame
+	local itemData = Multiboxer.db.scanData[self.realmName][itemID]
+	
+	if not itemData then return end -- dont draw anything if we don't have scanData
+	local scanData = itemData.scanData
+	local scanTime = itemData.scanTime
 
-	local createSlide = function(parent, data, i)
-		return Tab:CreateSlide(parent, data)
+	local auctions = auctionsFrame.auctions or {}
+	auctionsFrame.auctions = auctions
+
+	-- update/create auction slides
+	local numCheaper = 0
+	for i, data in ipairs(scanData) do
+		local auction = auctions[i]
+		-- add how many cheaper stacks there are to slide's data table
+		if i > 1 then
+			numCheaper = numCheaper + auctions[i-1].data.qty * auctions[i-1].data.stackSize / 200
+		end
+		data.numCheaper = numCheaper
+		-- create slide if not already created
+		if not auction then
+			auction = self:CreateAuctionSlide(auctionsFrame, itemID)
+		end
+		-- update or initialize it's data
+		self:UpdateAuctionSlide(auction, data)
+		-- slide anchoring
+		if i == 1 then
+			auction:SetPoint('TOPLEFT', auctionsFrame, 'TOPLEFT')
+		else
+			auction:SetPoint('TOP', auctions[i-1], 'BOTTOM')
+		end
+		auctions[i] = auction
 	end
 
-	local updateSlide = function(parent, itemFrame, data, i)
-		Tab:UpdateSlide(itemFrame, data)
-		itemFrame.itemIndex = i
+	-- hide excess slides
+	for i = #scanData + 1, #auctions do
+		auctions[i]:Hide()
 	end
 
-	if not scrollChild.items then
-		scrollChild.items = {}
+	-- hide/show scrollBar
+	if #scanData * auctions[1]:GetHeight() < itemFrame.scrollFrame:GetHeight() then
+		itemFrame.scrollBar.panel:Hide()
+		itemFrame.scrollBar:Hide()
+	else
+		itemFrame.scrollBar.panel:Show()
+		itemFrame.scrollBar:Show()
 	end
-
-	local realmName = GetRealmName()
-	local scanData = Multiboxer.db.scanData[realmName][itemID].scanData
-
-	Tab:ObjectList(scrollChild, scrollChild.items, createSlide, updateSlide, scanData, 0, 14, -1)
 end
 
-function Tab:CreateSlide(parent, data)
-	local slide = StdUi:HighlightButton(parent, 50, 20)
-	slide.text:SetText(math.floor(data.price * 100) / 100)
-	slide.qty = StdUi:FontString(slide, data.qty)
-	slide.qty:SetPoint('RIGHT', slide, 'LEFT', 8, 0)
+function Tab:CreateAuctionSlide(parent, itemID)
+	local slideHeight = 20
+	local slideWidth = parent:GetWidth()
+	local slide = StdUi:Frame(parent, slideWidth, slideHeight)
+	-- clickable price 
+	local price = StdUi:HighlightButton(slide, slideWidth*6/10, slideHeight)
+	price:SetPoint('TOPRIGHT', slide, 'TOPRIGHT')
+	price.text:SetJustifyH('LEFT')
+	-- set price and numCheaper for sellFrame
+	local this = self
+	price:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
+	price:SetScript('OnClick', function(self, button)
+		local sellItemFrame = this.auctionTab.sellFrame.itemFrames[itemID]
+		local data = slide.data
+		if button == 'RightButton' then
+			sellItemFrame.price:SetText(nil)
+			sellItemFrame.numCheaper:SetText(nil)
+		else
+			local sellPrice = math.floor(data.price * 10000) / 10000 - 0.0101
+			sellItemFrame.price:SetText(sellPrice)
+			sellItemFrame.numCheaper:SetText(data.numCheaper)
+		end
+	end)
+	slide.price = price
+	-- qty fontstring
+	local qty = StdUi:Label(slide, nil, 12, nil, slideWidth*3.3/10, slideHeight)
+	qty:SetPoint('TOPLEFT', slide, 'TOPLEFT')
+	qty:SetJustifyH('RIGHT')
+	slide.qty = qty
+
 	return slide
 end
 
-function Tab:UpdateSlide(slide, data)
-	slide.text:SetText(math.floor(data.price * 100) / 100)
+function Tab:UpdateAuctionSlide(slide, data)
+	slide.data = data
+	if not slide:IsVisible() then
+		slide:Show()
+	end
+
+	local price = slide.price
+	price.text:SetText(math.floor(data.price * 100) / 100)
+	price.text:SetTextColor(self:PriceColor(data))
+
+	local qty = slide.qty
+	qty:SetText(data.qty)
+	qty:SetTextColor(self:QtyColor(data))
+end
+
+function Tab:PriceColor(data)
+	if data.owner == self.charName then
+		r, g, b, a = 86, 255, 255, 1
+	elseif data.timeLeft == 2 then
+		r, g, b, a = 160, 160, 160, 1
+	elseif data.timeLeft == 1 then
+		r, g, b, a = 160, 160, 160, 0.5
+	else
+		r, g, b, a = 255, 255, 255 , 1
+	end
+	return r/255, g/255, b/255, a
+end
+
+function Tab:QtyColor(data)
+	local stackSize = data.stackSize
+	if stackSize == 200 or stackSize == 20 then
+		r, g, b, a = 244, 209, 66, 1
+	elseif stackSize == 100 or stackSize == 10 then
+		r, g, b, a = 2552, 134, 67, 1
+	end
+	return r/255, g/255, b/255, a
+end
+
+-- StatusBar
+function Tab:DrawStatusBar()
+	local auctionTab = self.auctionTab
+	local statusBar = StdUi:ProgressBar(auctionTab, 650, 30)
+	statusBar:SetPoint('BOTTOMRIGHT', auctionTab, 'BOTTOMRIGHT', -5, 10)
+	statusBar:SetMinMaxValues(0, 1000)
+	statusBar:SetValue(899)
+	statusBar:SetStatusBarColor(0.1, 0.5, 0.2, 1)
+
+	auctionTab.statusBar = statusBar
 end
 
 ---------------------------------- testing -----------------
