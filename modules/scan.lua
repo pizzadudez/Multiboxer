@@ -107,7 +107,8 @@ function Scan:StorePageData()
 		end
 
 		auctionData.stackSize = select(3, GetAuctionItemInfo("list", i))
-		auctionData.price = select(10, GetAuctionItemInfo("list", i)) / auctionData.stackSize / 10000
+		-- take in account price/stack posters
+		auctionData.stackPriceCopper = select(10, GetAuctionItemInfo("list", i))
 		auctionData.timeLeft = GetAuctionItemTimeLeft("list", i)
 		self.currPageAuctions[i] = auctionData
 	end
@@ -119,11 +120,14 @@ function Scan:StorePageData()
 end
 
 function Scan:CuratePageData()
+	local scanData = self.scanData
 	for i = 1, self.numPageAuctions do
-		local auction = self.currPageAuctions[i]
-		
+		local auction = self.currPageAuctions[i]	
 		if self:IsValidStackSize(auction.stackSize) then
-			local scanData = self.scanData
+			-- we only calculate per item buyout (in gold) if validStackSize for efficiency
+			auction.price = math.floor(auction.stackPriceCopper / auction.stackSize + 0.5) / 10000
+			auction.stackPriceCopper = nil -- not needed anymore
+
 			local hashKey = auction.price .. '_' .. auction.stackSize .. '_' .. 
 				auction.owner .. '_' .. auction.timeLeft
 

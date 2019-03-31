@@ -20,7 +20,7 @@ function Tab:Enable()
 	self.realmName = GetRealmName()
 	self.charName = UnitName('player')
 
-	self:SetSettings()
+	self:SetSettings() -- initialises settings for this module
 	self:DrawSellFrame()
 	self:DrawSettingsFrame()
 	self:DrawStatusBar()
@@ -35,8 +35,8 @@ function Tab:Enable()
 	self:DrawScanList()
 	self:ScanButton()
 	self:Finished()
-	
-	--self:DrawAuctionsFrame()
+
+
 end
 
 -- Message from Scan module
@@ -106,6 +106,8 @@ function Tab:DrawSettingsFrame()
 		end
 	end)
 
+	self:ItemListOrder()
+
 	auctionTab.settingsFrame = settingsFrame
 end
 
@@ -125,13 +127,55 @@ function Tab:SetSettings()
 	self.itemList = self.settings.itemLists[self.activeItemList]
 end
 
+function Tab:ItemListOrder()
+	local settingsFrame = self.auctionTab.settingsFrame
+
+	local button = StdUi:Button(settingsFrame, 70, 24, 'Reorder List')
+	button:SetPoint('TOPLEFT', settingsFrame, 'TOPLEFT', 7, -70)
+	if not self.itemList then
+		button:Disable()
+	end
+
+	local reorderFrame = StdUi:Panel(settingsFrame, 240, 100)
+	reorderFrame:SetPoint('CENTER', UIParent, 'CENTER')
+	reorderFrame:SetFrameStrata('DIALOG')
+
+	for i, item in ipairs(self.itemList) do
+		-- create itemButton
+		-- create moveHereButton
+			-- anchor to left of itemButton
+
+		-- if i == len of list
+			-- create moveHereButton
+				-- anchor to the right of itemButton
+	end
+
+	-- func itemButton(index)
+		-- setIcon(text) 
+		-- onclick
+			-- enable moveHereButtons (except left and right of current pos)
+			-- disable other itemButtons
+			-- enable and show CANCEL BUTTON
+			-- store button index in self.something
+
+	-- func moveHereButton
+		-- onclick
+			-- insert self.something index at this index
+			-- disable + hide all 
+			-- update itemButtons
+
+	-- func updateItemButtons
+
+
+end
+
 -- SellFrame
 function Tab:DrawSellFrame()
 	-- if we don't have an itemList we don't need to draw
 	if not self.itemList then return end 
 
-	local itemList = self.itemList
 	local auctionTab = self.auctionTab
+	local itemList = self.itemList
 	local itemFrameHeight = 30
 	local itemFrameWidth = 168
 
@@ -234,6 +278,9 @@ end
 
 -- ScanFrame
 function Tab:DrawScanFrame()
+	-- if we don't have an itemList we don't need to draw
+	if not self.itemList then return end 
+
 	local auctionTab = self.auctionTab
 	local itemList = self.itemList
 
@@ -242,7 +289,6 @@ function Tab:DrawScanFrame()
 	scanFrame:SetPoint('BOTTOMRIGHT', auctionTab.statusBar, 'TOPRIGHT', 0, 2)
 	auctionTab.scanFrame = scanFrame
 	-- draw container frame and stop if no profile selected
-	if not itemList then return end
 
 	local itemFrames = {}
 	local itemFrameWidth = 74
@@ -414,31 +460,6 @@ end
 
 ---------------------------------- testing -----------------
 
-function Tab:DrawAuctionsFrame()
-	local auctionTab = self.auctionTab
-	local cols = {
-		{name = 'Qty', width = 24, align = 'LEFT', index = 'qty', format = 'number'},
-		{name = 'Price', width = 32, align = 'LEFT', index = 'price', format = 'number'}
-	}
-	local sTable = StdUi:ScrollTable(auctionTab, cols, 16, 18)
-	sTable:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 50, -90)
-	sTable:EnableSelection(true)
-
-	local data = {}
-	local itemData = Multiboxer.db['scanData']['Antonidas'][152509]['scanData']
-	for i, auctionData in ipairs(itemData) do
-		local auction = {}
-		auction.qty = auctionData.qty
-		auction.price = math.floor(auctionData.price * 100) / 100
-		tinsert(data, auction)
-	end
-
-	sTable:SetData(data)
-	sTable:Show()
-	
-	auctionTab.sTable = sTable
-end
-
 -- Checkbox list for what items to scan
 function Tab:DrawScanList()
 	local auctionTab = self.auctionTab
@@ -447,10 +468,10 @@ function Tab:DrawScanList()
 
 	scanListFrame.items = scanListFrame.items or {}
 	scanListFrame.items[0] = scanListFrame
-	for i, itemID in ipairs({152505,152510,152509,152507,152511,152506,152508}) do
-
+	for i, value in ipairs(self.itemList) do
+		itemID = value.itemID
 		local item = StdUi:Checkbox(scanListFrame, 24, 24)
-		scanListFrame.items[i] = item
+		scanListFrame.items[i], scanListFrame.items[itemID] = item
 		item:SetPoint('LEFT', scanListFrame.items[i-1], 'RIGHT', 4, 0)
 		item:SetChecked(true)
 		item.OnValueChanged = function(self, state, value)
@@ -470,7 +491,8 @@ function Tab:CreateScanList()
 	Scan.scanList = {}
 
 	local scanListFrame = self.auctionTab.scanListFrame
-	for i, itemID in ipairs({152505,152510,152507,152509,152511,152506,152508}) do
+	for i, item in ipairs(self.itemList) do
+		local itemID = item.itemID
 		if scanListFrame.items[i].isChecked then
 			tinsert(Scan.scanList, itemID)
 		end
