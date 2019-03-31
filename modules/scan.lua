@@ -114,8 +114,11 @@ function Scan:StorePageData()
 	end
 
 	self:CuratePageData()
-	self:MultiboxAuctions() -- temporary integration for MultiboxAuctions
+	self:UpdateDatabase() -- stores sorted scan data in db and lets the GUI to redraw the scanFrame
+	-- temporary integration for MultiboxAuctions
+	C_ChatInfo.SendAddonMessage("Multiboxer", "NEW_SCAN_DATA", "WHISPER", Multiboxer.charName) 
 
+	-- prints to chat page progress - will be integrated in ProgressBar
 	print('stored ' .. self.itemString .. ' page ' .. tostring(self.currPage))
 end
 
@@ -158,18 +161,14 @@ function Scan:IsValidStackSize(stackSize)
 	return stackSize == 200 or stackSize == 100
 end
 
-function Scan:MultiboxAuctions()
-	-- MultiboxAuctions integration
-	local realmName = GetRealmName()
-	Multiboxer.db['scanData'] = Multiboxer.db['scanData'] or {}
-	Multiboxer.db['scanData'][realmName] = Multiboxer.db['scanData'][realmName] or {}
-	local scanData = Multiboxer.db['scanData'][realmName]
-	scanData[self.itemID] = scanData[self.itemID] or {}
-	scanData[self.itemID]['scanData'] = self.scanDataSorted
-	scanData[self.itemID]['scanTime'] = time()
-	-- tell MultiboxAuctions we have new data
-	C_ChatInfo.SendAddonMessage("Multiboxer", "NEW_SCAN_DATA", "WHISPER", UnitName("player"))
-	-- tell this addon to redraw scanData
-	local itemID = tonumber(self.itemID)
-	self:SendMessage('NEW_SCAN_DATA', itemID)
+function Scan:UpdateDatabase()
+	local realmName = Multiboxer.realmName
+	local db = Multiboxer.db.scanData[realmName] or {}
+	Multiboxer.db.scanData[realmName] = db
+
+	db[self.itemID] = {}
+	db[self.itemID].scanData = self.scanDataSorted
+	db[self.itemID].scanTime = time()
+	
+	self:SendMessage('NEW_SCAN_DATA', self.itemID)
 end

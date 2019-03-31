@@ -108,7 +108,11 @@ function Multiboxer:InitDatabase()
 	self.db.scanData = self.db.scanData or {}
 	self.db.settings = self.db.settings or {}
 
-	self.profileName = UnitName("player") .. '-' .. GetRealmName()
+	-- character / realm specific
+	self.charName = UnitName('player')
+	self.realmName = GetRealmName()
+	self.profileName = self.charName .. '-' .. self.realmName
+	
 end
 
 Multiboxer.defaultSettings = {

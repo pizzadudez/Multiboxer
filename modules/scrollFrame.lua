@@ -4,11 +4,9 @@ local Multiboxer = unpack(select(2, ...))
 local StdUi = LibStub('StdUi')
 
 -- module object
-local Tab = Multiboxer:GetModule('Tab')
+--local Tab = Multiboxer:GetModule('Tab')
 
--- change this file to Multiboxer:Method
-
-Tab.ScrollBarEvents = {
+Multiboxer.ScrollBarEvents = {
 	-- UpButtonOnClick = function(self)
 	-- 	local scrollBar = self.scrollBar;
 	-- 	local scrollStep = scrollBar.ScrollFrame.scrollStep or (scrollBar.ScrollFrame:GetHeight() / 2);
@@ -24,7 +22,7 @@ Tab.ScrollBarEvents = {
 	end
 };
 
-Tab.ScrollFrameEvents = {
+Multiboxer.ScrollFrameEvents = {
 	OnLoad = function(self)
 		local scrollbar = self.ScrollBar;
 
@@ -123,7 +121,7 @@ Tab.ScrollFrameEvents = {
 	end
 }
 
-function Tab:ScrollFrame(parent, width, height, scrollChild)
+function Multiboxer:ScrollFrame(parent, width, height, scrollChild)
 	local panel = StdUi:Panel(parent, width, height);
 	local scrollBarWidth = 6;
 
@@ -141,7 +139,7 @@ function Tab:ScrollFrame(parent, width, height, scrollChild)
 	scrollBar.ScrollFrame = scrollFrame;
 
 	--scrollFrame:SetScript('OnLoad', StdUi.ScrollFrameEvents.OnLoad);-- LOL, no wonder it wasnt working
-	Tab.ScrollFrameEvents.OnLoad(scrollFrame);
+	Multiboxer.ScrollFrameEvents.OnLoad(scrollFrame);
 
 	scrollFrame.panel = panel;
 	scrollFrame:ClearAllPoints();
@@ -176,7 +174,7 @@ function Tab:ScrollFrame(parent, width, height, scrollChild)
 end
 
 
-function Tab:ScrollBar(parent, width, height, horizontal)
+function Multiboxer:ScrollBar(parent, width, height, horizontal)
 
 	local panel = StdUi:Panel(parent, width, height);
 	local scrollBar = StdUi:Slider(parent, width, height, 0, not horizontal);

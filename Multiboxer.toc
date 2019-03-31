@@ -21,7 +21,9 @@ modules\scan.lua
 modules\post.lua
 modules\cancel.lua
 modules\inventory.lua
+modules\scrollFrame.lua
 modules\tab\tab.lua
-modules\tab\scrollFrame.lua
+modules\tab\settings.lua
+modules\tab\scanFrame.lua
 
 scanData.lua
