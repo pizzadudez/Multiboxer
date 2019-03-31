@@ -29,14 +29,10 @@ function Tab:Enable()
 	self:DrawScanFrame()
 	self:RegisterMessage('NEW_SCAN_DATA')
 
-
 	-- for testing purposes not final
-	Scan.scanList = {152505,152510,152507,152509,152511,152506,152508} 
 	self:DrawScanList()
 	self:ScanButton()
 	self:Finished()
-
-
 end
 
 -- Message from Scan module
@@ -106,9 +102,8 @@ function Tab:DrawSettingsFrame()
 		end
 	end)
 
-	self:ItemListOrder()
-
 	auctionTab.settingsFrame = settingsFrame
+	self:ItemListOrder()
 end
 
 function Tab:SetSettings()
@@ -128,7 +123,11 @@ function Tab:SetSettings()
 end
 
 function Tab:ItemListOrder()
+	if not self.itemList then return end
+
 	local settingsFrame = self.auctionTab.settingsFrame
+	local itemButtonWidth = 32
+	local settingsFrameWidth = (itemButtonWidth + 15) * #self.itemList + 15
 
 	local button = StdUi:Button(settingsFrame, 70, 24, 'Reorder List')
 	button:SetPoint('TOPLEFT', settingsFrame, 'TOPLEFT', 7, -70)
@@ -136,37 +135,103 @@ function Tab:ItemListOrder()
 		button:Disable()
 	end
 
-	local reorderFrame = StdUi:Panel(settingsFrame, 240, 100)
+	local reorderFrame = StdUi:Panel(settingsFrame, settingsFrameWidth, 100)
 	reorderFrame:SetPoint('CENTER', UIParent, 'CENTER')
-	reorderFrame:SetFrameStrata('DIALOG')
+	reorderFrame:SetFrameStrata('LOW')
 
-	for i, item in ipairs(self.itemList) do
-		-- create itemButton
-		-- create moveHereButton
-			-- anchor to left of itemButton
+	local itemButtons = {}
+	reorderFrame.itemButtons = itemButtons
+	local moveHereButtons = {}
+	reorderFrame.moveHereButtons = moveHereButtons
 
-		-- if i == len of list
-			-- create moveHereButton
-				-- anchor to the right of itemButton
+	local function CreateItemButton(index)
+		local button = StdUi:Button(reorderFrame, itemButtonWidth, itemButtonWidth)
+		button.text:SetFontSize(7)
+		button.index = index
+		button:SetScript('OnClick', function()
+			for i = 1, #self.itemList + 1 do
+				-- show moveHere Buttons except the two near this index
+				if i < index or i > index + 1 then
+					moveHereButtons[i]:Show()
+				end
+				-- disable all itemButtons
+				if itemButtons[i] then
+					itemButtons[i]:Disable()
+				end
+				-- TODO show cancel button
+				self.reorderIndex = index
+			end
+		end)
+		
+		return button
 	end
 
-	-- func itemButton(index)
-		-- setIcon(text) 
-		-- onclick
-			-- enable moveHereButtons (except left and right of current pos)
-			-- disable other itemButtons
-			-- enable and show CANCEL BUTTON
-			-- store button index in self.something
+	local function UpdateItemButton(button)
+		if not self.itemList[button.index] then return end --- ????
 
-	-- func moveHereButton
-		-- onclick
-			-- insert self.something index at this index
-			-- disable + hide all 
-			-- update itemButtons
+		local itemID = self.itemList[button.index].itemID
+		local icon = StdUi:Texture(button, button:GetWidth(), button:GetHeight(), GetItemIcon(itemID))
+		button:SetNormalTexture(icon)
+		icon:SetPoint('TOPLEFT', button, 'TOPLEFT', 1, -1)
+		icon:SetPoint('BOTTOMRIGHT', button, 'BOTTOMRIGHT', -1, 1)
+	end
 
-	-- func updateItemButtons
+	local function CreateMoveHereButtons(parent, index)
+		local button = StdUi:Button(parent, 16, 16, '+')
+		button.index = index
+		button:SetScript('OnClick', function()
+			-- here we remove from list and insert in a different position
+			local newIndex = index
+			if index > self.reorderIndex then
+				newIndex = index - 1
+			end
+			tinsert(self.itemList, newIndex, tremove(self.itemList, self.reorderIndex))
 
+			for i = 1, #self.itemList + 1 do
+				moveHereButtons[i]:Hide()
+				if itemButtons[i] then	
+					UpdateItemButton(itemButtons[i])
+					itemButtons[i]:Enable()
+				end
+			end
+		end)
+		button:Hide()
+		return button
+	end
 
+	for i, item in ipairs(self.itemList) do
+		local itemID = item.itemID
+		local itemButton = CreateItemButton(i)
+		UpdateItemButton(itemButton)
+		itemButtons[i] = itemButton
+
+		-- Anchor buttons
+		if i == 1 then
+			itemButton:SetPoint('LEFT', reorderFrame, 'LEFT', 15, 0)
+		else
+			itemButton:SetPoint('LEFT', itemButtons[i-1], 'RIGHT', 15, 0)
+		end
+		
+		local moveHereButton = CreateMoveHereButtons(itemButton, i)
+		moveHereButton:SetPoint('TOPLEFT', itemButton, 'TOPLEFT', -10, 10)
+		moveHereButtons[i] = moveHereButton
+
+		if i == #self.itemList then
+			moveHereButtons[i+1] = CreateMoveHereButtons(itemButton, i + 1)
+			moveHereButtons[i+1]:SetPoint('TOPRIGHT', itemButton, 'TOPRIGHT', 10, 10)
+		end
+	end
+
+	button:SetScript('OnClick', function()
+		if reorderFrame:IsShown() then
+			reorderFrame:Hide()
+		else
+			reorderFrame:Show()
+		end
+	end)
+
+	reorderFrame:Hide()
+	settingsFrame.reorderFrame = reorderFrame
 end
 
 -- SellFrame
@@ -462,6 +527,8 @@ end
 
 -- Checkbox list for what items to scan
 function Tab:DrawScanList()
+	if not self.itemList then return end
+
 	local auctionTab = self.auctionTab
 	local scanListFrame = StdUi:Frame(auctionTab, 200, 60)
 	scanListFrame:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 92, -30)
@@ -506,6 +573,7 @@ function Tab:ScanButton()
 	local btn = StdUi:Button(auctionTab, 70, 40, 'Scan List')
 	btn:SetPoint('TOPLEFT', auctionTab, 'TOPLEFT', 20, -30)
 	btn:SetScript('OnClick', function()
+		Tab:CreateScanList()
 		Scan:ScanList()
 	end)
 end
