@@ -112,6 +112,19 @@ function Multiboxer:InitDatabase()
 	self.charName = UnitName('player')
 	self.realmName = GetRealmName()
 	self.profileName = self.charName .. '-' .. self.realmName
+
+	-- Update scanData with apiScanData if more up to date
+	-- This shouldn't do anything if there is no external data source for this realm
+	for itemID, itemData in pairs(self.apiScanData[self.realmName]) do
+		local realmDB = Multiboxer.db.scanData[self.realmName] or {}
+		if realmDB[itemID] then
+			if itemData.scanTime > realmDB[itemID].scanTime then
+				realmDB[itemID] = itemData
+			end
+		else
+			realmDB[itemID] = itemData
+		end
+	end
 	
 end
 
@@ -134,6 +147,10 @@ Multiboxer.defaultSettings = {
 			{itemID = 163223, stackCount = 15},
 			{itemID = 163224, stackCount = 15},		
 		}
+	},
+	stackSizeList = {
+		herbs = {200, 100},
+		alchemy = {5, 10, 20}
 	},
 	stackCountIncrement = 12,
 	scanLimit = 200,

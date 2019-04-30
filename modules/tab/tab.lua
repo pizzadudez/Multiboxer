@@ -185,6 +185,7 @@ end
 
 function Tab:CreateScanList()
 	Scan.scanList = {}
+	Scan.stackSizeList = self.stackSizeList
 
 	local scanListFrame = self.auctionTab.scanListFrame
 	for i, item in ipairs(self.itemList) do

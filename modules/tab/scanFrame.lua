@@ -175,7 +175,7 @@ function Tab:QtyColor(data)
 	if stackSize == 200 or stackSize == 20 then
 		r, g, b, a = 244, 209, 66, 1
 	elseif stackSize == 100 or stackSize == 10 then
-		r, g, b, a = 2552, 134, 67, 1
+		r, g, b, a = 255, 134, 67, 1
 	end
 	return r/255, g/255, b/255, a
 end

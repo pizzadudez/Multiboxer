@@ -158,7 +158,12 @@ function Scan:SortScanData()
 end
 
 function Scan:IsValidStackSize(stackSize)
-	return stackSize == 200 or stackSize == 100
+	for _, size in ipairs(self.stackSizeList) do
+		if stackSize == size then
+			return true
+		end
+	end
+	return false
 end
 
 function Scan:UpdateDatabase()

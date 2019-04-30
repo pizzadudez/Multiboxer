@@ -86,6 +86,7 @@ function Tab:SetSettings()
 	self.activeItemList = self.activeItemList or self.settings.activeItemList
 	self.settings.activeItemList = self.activeItemList
 	self.itemList = self.settings.itemLists[self.activeItemList]
+	self.stackSizeList = self.settings.stackSizeList[self.activeItemList]
 end
 
 function Tab:ItemListOrder()
