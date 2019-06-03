@@ -158,7 +158,7 @@ function Tab:UpdateAuctionSlide(slide, data)
 end
 
 function Tab:PriceColor(data)
-	if data.owner == Multiboxer.charName then
+	if string.find(data.owner, Multiboxer.charName) then
 		r, g, b, a = 86, 255, 255, 1
 	elseif data.timeLeft == 2 then
 		r, g, b, a = 160, 160, 160, 1
