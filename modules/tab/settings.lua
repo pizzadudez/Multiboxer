@@ -85,8 +85,13 @@ function Tab:SetSettings()
 
 	self.activeItemList = self.activeItemList or self.settings.activeItemList
 	self.settings.activeItemList = self.activeItemList
-	self.itemList = self.settings.itemLists[self.activeItemList]
-	self.stackSizeList = self.settings.stackSizeList[self.activeItemList]
+
+	-- if new item list and profile doesnt have it, select it from Multiboxer.default and add it to the profile
+	self.itemList = self.settings.itemLists[self.activeItemList] or Multiboxer.defaultSettings.itemLists[self.activeItemList]
+	self.settings.itemLists[self.activeItemList] = self.itemList
+
+	self.stackSizeList = self.settings.stackSizeList[self.activeItemList] or Multiboxer.defaultSettings.stackSizeList[self.activeItemList]
+	self.settings.stackSizeList[self.activeItemList] = self.stackSizeList
 end
 
 function Tab:ItemListOrder()

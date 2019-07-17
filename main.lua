@@ -130,6 +130,10 @@ end
 
 Multiboxer.defaultSettings = {
 	itemLists = {
+		nazjatar = {
+			{itemID = 168487, stackCount = 24},
+			{itemID = 168185, stackCount = 24},
+		},
 		herbs = {
 			{itemID = 152505, stackCount = 48},
 			{itemID = 152510, stackCount = 6, stackCountIncrement = 3},
@@ -149,6 +153,7 @@ Multiboxer.defaultSettings = {
 		}
 	},
 	stackSizeList = {
+		nazjatar = {200, 100},
 		herbs = {200, 100},
 		alchemy = {5, 10, 20}
 	},
